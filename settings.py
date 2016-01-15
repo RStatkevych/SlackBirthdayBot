@@ -1,15 +1,15 @@
 # used as auth token in API call
 # Read here for more info: https://api.slack.com/bot-users#custom_bot_users
-BOT_TOKEN = ''
+BOT_TOKEN = 'xoxb-17855172657-4S3JQwZ2otTWA30kNeaCt9gq'
 
 # channel ID where bot should send messages to
-CHANNEL = ''
+CHANNEL = 'G084J4R5W'
 
 # Endpoint for API call to send message
 ENDPOINT_URL = 'https://slack.com/api/chat.postMessage'
 
 # Text for greating messsage
-MSG_TEXT = '<!channel> HPBD {0} <@{1}>!'
+MSG_TEXT = '<!channel> ЗДН {0} <@{1}>!'
 
 # broker url for celery worker
 BROKER_URL = 'mongodb://localhost:27017/birthday_bot'
