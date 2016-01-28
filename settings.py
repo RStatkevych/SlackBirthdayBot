@@ -3,10 +3,10 @@
 
 # used as auth token in API call
 # Read here for more info: https://api.slack.com/bot-users#custom_bot_users
-BOT_TOKEN = 'xoxb-17162939365-IsmAoFFNLVIUwWQeZ3meWZbB'
+BOT_TOKEN = ''
 
 # channel ID where bot should send messages to
-CHANNEL = 'C0H4WRUNA'
+CHANNEL = ''
 
 # Endpoint for API call to send message
 ENDPOINT_URL = 'https://slack.com/api/chat.postMessage'
@@ -25,7 +25,7 @@ app.conf.update(
 	CELERYBEAT_SCHEDULE = {
 	    'congrats_with_birthday': {
 	        'task': 'bot.detect_birthday',
-	        'schedule': crontab(hour=8,minute=0),
+	        'schedule': crontab(minute='*'),
 	    },
 	}
 )
