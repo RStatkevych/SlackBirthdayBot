@@ -4,3 +4,4 @@ pymongo
 supervisor
 grequests
 mongoengine
+flask

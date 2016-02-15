@@ -3,10 +3,10 @@
 
 # used as auth token in API call
 # Read here for more info: https://api.slack.com/bot-users#custom_bot_users
-BOT_TOKEN = ''
+BOT_TOKEN = '...'
 
 # channel ID where bot should send messages to
-CHANNEL = ''
+CHANNEL = '...'
 
 # Endpoint for API call to send message
 ENDPOINT_URL = 'https://slack.com/api/chat.postMessage'

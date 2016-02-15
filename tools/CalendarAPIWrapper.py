@@ -3,10 +3,13 @@ import json
 import models
 import datetime
 
+from slackbot_credits import *
+
 class CalendarAPIWrapper(object):
-	client_id = ''
-	client_secret = ''
-	
+	client_id = GOOGLE_CALENDAR_APP_ID
+	client_secret = GOOGLE_CALENDAR_APP_SECRET
+	redirect_uri = 'http://localhost:5000/auth/google'
+
 	__oauth_urls = {
 		'OAUTH_URL_REFRESH_TOKEN' : 'https://www.googleapis.com/oauth2/v4/token',
 		'OAUTH_URL_TOKEN_VALIDATION' : 'https://www.googleapis.com/oauth2/v3/tokeninfo',
@@ -34,6 +37,20 @@ class CalendarAPIWrapper(object):
 			return f(*args, **kwargs)
 		return _
 
+	@staticmethod
+	def oauth_url():
+		google_url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&scope=email profile https://www.googleapis.com/auth/calendar.readonly&response_type=code&redirect_uri=%s&access_type=offline'
+		url = google_url % (CalendarAPIWrapper.client_id, CalendarAPIWrapper.redirect_uri)
+
+		return url
+
+	@staticmethod
+	def get_oauth_secrets():
+		return {
+			'client_id':CalendarAPIWrapper.client_id,
+			'client_secret':CalendarAPIWrapper.client_secret,
+			'redirect_uri': CalendarAPIWrapper.redirect_uri
+		}
 	def check_token_status(self):
 		response = requests.get(self.__oauth_urls['OAUTH_URL_TOKEN_VALIDATION'], 
 					 			params={'access_token':self.user_data['access_token']},)
@@ -63,7 +80,7 @@ class CalendarAPIWrapper(object):
 		response = requests.get(url=self.__callendar_urls['CALLENDAR_URL_GET_CALENDAR_LIST'], headers=kwargs['headers'])
 
 		response = json.loads(response.text)
-		print response
+		return response 
 
 	@__validate_token_decorator
 	def get_events(self, calendar_id, **kwargs):

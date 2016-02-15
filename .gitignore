@@ -2,3 +2,4 @@
 .env/
 celerybeat-schedule
 *.pid
+slackbot_credits.py
