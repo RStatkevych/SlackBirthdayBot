@@ -2,8 +2,7 @@ from flask import *
 import requests
 from slackbot_credits import *
 from models import *
-from tools.CalendarAPIWrapper import *
-from tools import get_team
+from tools import *
 import json
 
 app = Flask(__name__)
@@ -17,15 +16,11 @@ def home_page():
 def slack_auth_redirect():
 	code = request.args['code']
 
-	url = 'https://slack.com/api/oauth.access'
-	params = {
-		'client_id': SLACK_APP_ID,
-		'client_secret': SLACK_APP_SECRET,
-		'code':code,
-		'redirect_uri': SLACK_APP_REDIRECT_URI
-	}
+	response = slack.auth_redirect_handler(code)
 
-	response = json.loads(requests.get(url, params=params).text)
+	if not slack.check_user(response['access_token']):
+		# TODO: handle with 404 page
+		return jsonify(**{'lol':'fail'})
 
 	session['slack_team'] = response['team_id']
 
@@ -41,21 +36,15 @@ def slack_auth_redirect():
 		o.update(bot_token=response['bot']['bot_access_token'], bot_id=response['bot']['bot_user_id'],
 				 slack_access_token=response['access_token'])
 	
-	return redirect(CalendarAPIWrapper.oauth_url())
+	return redirect(google_api.oauth_url())
 
 @app.route('/auth/google')
 def google_auth_redirect():
 	code = request.args['code']
-	url = 'https://www.googleapis.com/oauth2/v4/token'
-	params = CalendarAPIWrapper.get_oauth_secrets()
-	params['grant_type'] = 'authorization_code'
-	params['code'] = code
-	params['access_type'] = 'offline'
-
 	team_id = session['slack_team']
 
-	headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-	response = json.loads(requests.post(url, data=params, headers=headers).text)
+	response = google_api.auth_redirect_handler(code)
+
 	o = UserCredits.objects(team_id=team_id)
 	
 	if len(o) != 0:
@@ -68,11 +57,13 @@ def google_auth_redirect():
 	return redirect('/select_calendar')
 
 @app.route('/select_calendar')
+@slack.authorized
 def function():
-	team = get_team()
-	wrapper = CalendarAPIWrapper({'access_token': team.google_access_token})
-	ls = wrapper.get_calendar_list()
-	return jsonify(**{'data': ls})
+	team = slack.get_team()
+	wrapper = google_api({'access_token': team.google_access_token})
+	ls = wrapper.get_calendar_list()['items']
+	# TODO: make RESTful ??
+	return render_template('choose_calendar.html',calendars=ls)
 
 if __name__ == '__main__':
     app.run(debug=True)

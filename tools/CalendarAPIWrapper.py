@@ -22,7 +22,7 @@ class CalendarAPIWrapper(object):
 
 	def __init__(self, user_data):
 		self.user_data = user_data
-	
+
 	def __validate_token_decorator(f):
 		def _(*args, **kwargs):
 			self = args[0]
@@ -38,6 +38,16 @@ class CalendarAPIWrapper(object):
 		return _
 
 	@staticmethod
+	def auth_redirect_handler(code): 
+		params = CalendarAPIWrapper.get_oauth_secrets()
+		params['grant_type'] = 'authorization_code'
+		params['code'] = code
+		params['access_type'] = 'offline'
+
+		headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+		return json.loads(requests.post(CalendarAPIWrapper.__oauth_urls['OAUTH_URL_REFRESH_TOKEN'], data=params, headers=headers).text)
+
+	@staticmethod
 	def oauth_url():
 		google_url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&scope=email profile https://www.googleapis.com/auth/calendar.readonly&response_type=code&redirect_uri=%s&access_type=offline'
 		url = google_url % (CalendarAPIWrapper.client_id, CalendarAPIWrapper.redirect_uri)
@@ -51,6 +61,7 @@ class CalendarAPIWrapper(object):
 			'client_secret':CalendarAPIWrapper.client_secret,
 			'redirect_uri': CalendarAPIWrapper.redirect_uri
 		}
+
 	def check_token_status(self):
 		response = requests.get(self.__oauth_urls['OAUTH_URL_TOKEN_VALIDATION'], 
 					 			params={'access_token':self.user_data['access_token']},)
@@ -63,6 +74,9 @@ class CalendarAPIWrapper(object):
 			return True
 	
 	def refresh_token(self):
+		if not ('refresh_token' in self.user_data):
+			raise Exception
+
 		params = {
 			'grant_type':'refresh_token',
 			'refresh_token': self.user_data['refresh_token'],
@@ -77,14 +91,14 @@ class CalendarAPIWrapper(object):
 
 	@__validate_token_decorator
 	def get_calendar_list(self, **kwargs):
-		response = requests.get(url=self.__callendar_urls['CALLENDAR_URL_GET_CALENDAR_LIST'], headers=kwargs['headers'])
+		response = requests.get(url=CalendarAPIWrapper.__callendar_urls['CALLENDAR_URL_GET_CALENDAR_LIST'], headers=kwargs['headers'])
 
 		response = json.loads(response.text)
 		return response 
 
 	@__validate_token_decorator
 	def get_events(self, calendar_id, **kwargs):
-		response = requests.get(url=self.__callendar_urls['CALLENDAR_URL_GET_EVENTS'].format(calendar_id), headers=kwargs['headers'])
+		response = requests.get(url=CalendarAPIWrapper.__callendar_urls['CALLENDAR_URL_GET_EVENTS'].format(calendar_id), headers=kwargs['headers'])
 		today = datetime.date.today().strftime('%Y-%m-%d')
 
 		response = json.loads(response.text)
