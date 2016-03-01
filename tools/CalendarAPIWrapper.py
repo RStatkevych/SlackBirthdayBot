@@ -8,7 +8,7 @@ from slackbot_credits import *
 class CalendarAPIWrapper(object):
 	client_id = GOOGLE_CALENDAR_APP_ID
 	client_secret = GOOGLE_CALENDAR_APP_SECRET
-	redirect_uri = 'http://localhost:5000/auth/google'
+	redirect_uri = GOOGLE_REDIRECT_URL
 
 	__oauth_urls = {
 		'OAUTH_URL_REFRESH_TOKEN' : 'https://www.googleapis.com/oauth2/v4/token',
@@ -24,6 +24,9 @@ class CalendarAPIWrapper(object):
 		self.user_data = user_data
 
 	def __validate_token_decorator(f):
+		''' Used to wrap methods which are using Google Callendar 
+			to handle cases when token is expired
+		'''
 		def _(*args, **kwargs):
 			self = args[0]
 
@@ -31,7 +34,7 @@ class CalendarAPIWrapper(object):
 				self.refresh_token()
 
 			kwargs['headers'] = {
-				'Authorization': 'Bearer '+self.user_data['access_token']
+				'Authorization': 'Bearer '+self.user_data['google_access_token']
 			}
 
 			return f(*args, **kwargs)
@@ -63,8 +66,10 @@ class CalendarAPIWrapper(object):
 		}
 
 	def check_token_status(self):
+		''' checks if access_token is expired or not
+		'''
 		response = requests.get(self.__oauth_urls['OAUTH_URL_TOKEN_VALIDATION'], 
-					 			params={'access_token':self.user_data['access_token']},)
+					 			params={'access_token':self.user_data['google_access_token']},)
 
 		response = json.loads(response.text)
 		
@@ -74,23 +79,30 @@ class CalendarAPIWrapper(object):
 			return True
 	
 	def refresh_token(self):
-		if not ('refresh_token' in self.user_data):
+		''' refreshes token in case it is expired
+		'''
+		print self.user_data
+		if not ('google_refresh_token' in self.user_data):
+			# no refresh token 
+			# mostly impossible situation
 			raise Exception
 
 		params = {
 			'grant_type':'refresh_token',
-			'refresh_token': self.user_data['refresh_token'],
+			'refresh_token': self.user_data['google_refresh_token'],
 			'client_secret': self.client_secret,
 			'client_id': self.client_id
 		}
 
 		response = requests.post(self.__oauth_urls['OAUTH_URL_REFRESH_TOKEN'], params=params)
 		response = json.loads(response.text)
-		self.user_data['access_token'] = response['access_token']
+		self.user_data['google_access_token'] = response['access_token']
 		self.user_data.save()
 
 	@__validate_token_decorator
 	def get_calendar_list(self, **kwargs):
+		''' returns the list of calendars of current user 
+		'''
 		response = requests.get(url=CalendarAPIWrapper.__callendar_urls['CALLENDAR_URL_GET_CALENDAR_LIST'], headers=kwargs['headers'])
 
 		response = json.loads(response.text)
@@ -98,6 +110,8 @@ class CalendarAPIWrapper(object):
 
 	@__validate_token_decorator
 	def get_events(self, calendar_id, **kwargs):
+		''' returns a list of events related to callendar with calendar_id
+		'''
 		response = requests.get(url=CalendarAPIWrapper.__callendar_urls['CALLENDAR_URL_GET_EVENTS'].format(calendar_id), headers=kwargs['headers'])
 		today = datetime.date.today().strftime('%Y-%m-%d')
 

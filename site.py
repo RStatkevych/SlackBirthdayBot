@@ -4,8 +4,12 @@ from slackbot_credits import *
 from models import *
 from tools import *
 import json
+from flask.ext.bower import Bower
 
 app = Flask(__name__)
+
+Bower(app)
+
 app.config['SECRET_KEY'] = 'random-string'
 
 @app.route('/')
@@ -56,14 +60,34 @@ def google_auth_redirect():
 
 	return redirect('/select_calendar')
 
-@app.route('/select_calendar')
+@app.route('/config')
 @slack.authorized
-def function():
+def render_select_calendar_template():
+	return render_template('config-template.html')
+
+@app.route('/api/update', methods=['POST'])
+@slack.authorized
+def update():
 	team = slack.get_team()
-	wrapper = google_api({'access_token': team.google_access_token})
+	data = request.json
+	team.update(**data)
+		
+	return jsonify(**{'status':'ok'})
+
+@app.route('/api/calendar', methods=['POST', 'GET'])
+@slack.authorized
+def get_calendars():
+	team = slack.get_team()
+	wrapper = google_api(team)
 	ls = wrapper.get_calendar_list()['items']
-	# TODO: make RESTful ??
-	return render_template('choose_calendar.html',calendars=ls)
+	return jsonify(**{'data': ls})
+
+@app.route('/api/channel')
+@slack.authorized
+def get_channels():
+	team = slack.get_team()
+	channels = slack.get_channels_list(team)
+	return jsonify(**{'data': channels})
 
 if __name__ == '__main__':
     app.run(debug=True)

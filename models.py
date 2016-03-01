@@ -8,6 +8,7 @@ class UserCredits(Document):
 	google_refresh_token = StringField()
 	calendar_id = StringField()
 	team_id = StringField()
+	channel_id = StringField()
 	team_name = StringField()
 	bot_token = StringField()
 	bot_id = StringField()

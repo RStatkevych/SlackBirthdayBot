@@ -5,3 +5,4 @@ supervisor
 grequests
 mongoengine
 flask
+Bower

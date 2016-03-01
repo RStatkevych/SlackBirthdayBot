@@ -1,0 +1,22 @@
+{
+  "name": "birthday_bot",
+  "homepage": "https://github.com/IcedNecro/SlackBirthdayBot",
+  "authors": [
+    "Roman Statkevych <romanstatkevich@gmail.com>"
+  ],
+  "description": "",
+  "main": "",
+  "moduleType": [],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": "angularjs#~1.5.0",
+    "jquery": "~2.2.0"
+  }
+}

@@ -1,3 +1,15 @@
+
+p {
+	margin: 0px;
+}
 .calendar-list-item {
-	
+	background-color: #fafafa;
+	height: 50px;	
+}
+.calendar-list-item p:first-child {
+	font-weight: bold;
+}
+.selected{
+	background-color: blue;
+	color: red;
 }

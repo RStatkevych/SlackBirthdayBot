@@ -1,0 +1,41 @@
+ <!DOCTYPE html>
+ <html ng-app='client'> 
+ <head>
+ 	<script type="text/javascript" src='{{ url_for("bower.static", filename="angular/angular.min.js") }}'></script>
+ 	<script type="text/javascript" src='{{ url_for("static", filename="js/controller.js") }}'></script>
+ 	<link rel="stylesheet" type="text/css" href='{{ url_for("static", filename="css/style.css") }}'>
+ 	<title></title>
+ </head>
+ <body>
+ 	<div  ng-controller='controller'>
+ 		{% raw %}
+ 		<p>Choose calendar:</p>
+
+ 		<div>
+	 		<div ng-click='setSelected(calendar)' class='calendar-list-item' ng-repeat='calendar in calendars'>
+	 			<span  ng-if='calendar.id == selected.id' class='selected'>
+		 			<p>{{ calendar.summary }}</p>
+		 			<p>{{ calendar.description }}</p>		
+	 			</span>
+	 			<span  ng-if='calendar.id != selected.id'>
+		 			<p>{{ calendar.summary }}</p>
+		 			<p>{{ calendar.description }}</p>		
+	 			</span>
+	 		</div>
+ 		</div> 
+ 		<p>Choose room where to post:</p>
+ 		 <div>
+	 		<div ng-click='setSelectedChannel(channel)' class='calendar-list-item' ng-repeat='channel in channels'>
+	 			<span  ng-if='channel.id == selectedChannel.id' class='selected'>
+		 			<p>{{ channel.name }}</p>
+	 			</span>
+	 			<span  ng-if='channel.id != selectedChannel.id'>
+		 			<p>{{ channel.name }}</p>
+	 			</span>
+	 		</div>
+ 		</div> 
+ 		<button class='save-button' ng-click='update()'>Save</button>
+ 		{% endraw %}
+ 	</div>
+ </body>
+ </html>

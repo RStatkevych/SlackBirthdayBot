@@ -3,3 +3,4 @@
 celerybeat-schedule
 *.pid
 slackbot_credits.py
+bower_components/
