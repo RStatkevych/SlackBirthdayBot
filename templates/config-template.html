@@ -12,12 +12,12 @@
  		<p>Choose calendar:</p>
 
  		<div>
-	 		<div ng-click='setSelected(calendar)' class='calendar-list-item' ng-repeat='calendar in calendars'>
-	 			<span  ng-if='calendar.id == selected.id' class='selected'>
+	 		<div ng-click='setSelected(calendar.id)' class='calendar-list-item' ng-repeat='calendar in calendars'>
+	 			<span  ng-if='calendar.id == selectedCalendar' class='selected'>
 		 			<p>{{ calendar.summary }}</p>
 		 			<p>{{ calendar.description }}</p>		
 	 			</span>
-	 			<span  ng-if='calendar.id != selected.id'>
+	 			<span  ng-if='calendar.id != selectedCalendar'>
 		 			<p>{{ calendar.summary }}</p>
 		 			<p>{{ calendar.description }}</p>		
 	 			</span>
@@ -25,11 +25,11 @@
  		</div> 
  		<p>Choose room where to post:</p>
  		 <div>
-	 		<div ng-click='setSelectedChannel(channel)' class='calendar-list-item' ng-repeat='channel in channels'>
-	 			<span  ng-if='channel.id == selectedChannel.id' class='selected'>
+	 		<div ng-click='setSelectedChannel(channel.id)' class='calendar-list-item' ng-repeat='channel in channels'>
+	 			<span  ng-if='channel.id == selectedChannel' class='selected'>
 		 			<p>{{ channel.name }}</p>
 	 			</span>
-	 			<span  ng-if='channel.id != selectedChannel.id'>
+	 			<span  ng-if='channel.id != selectedChannel'>
 		 			<p>{{ channel.name }}</p>
 	 			</span>
 	 		</div>

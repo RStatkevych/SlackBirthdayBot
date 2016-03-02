@@ -58,7 +58,7 @@ def google_auth_redirect():
 		else:
 			o.update(google_access_token=response['access_token'])
 
-	return redirect('/select_calendar')
+	return redirect('/config')
 
 @app.route('/config')
 @slack.authorized
@@ -79,7 +79,12 @@ def update():
 def get_calendars():
 	team = slack.get_team()
 	wrapper = google_api(team)
-	ls = wrapper.get_calendar_list()['items']
+
+	ls = {
+		'calendars': wrapper.get_calendar_list()['items'],
+		'selected': team['calendar_id'] if 'calendar_id' in team else None
+	}
+	
 	return jsonify(**{'data': ls})
 
 @app.route('/api/channel')

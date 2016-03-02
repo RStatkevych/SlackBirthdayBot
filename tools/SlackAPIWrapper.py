@@ -1,4 +1,4 @@
-from flask import session
+from flask import session, redirect
 from models import UserCredits
 from slackbot_credits import *
 
@@ -52,9 +52,9 @@ class SlackAPIWrapper(object):
 
 		return user_info['is_admin'] == True or user_info['is_owner'] == True
 
-	@property
+	@staticmethod
 	def authentication_url():
-		return SlackAPIWrapper.__oauth_urls['OAUTH_AUTHENTICATION_URL']+('?scope=identify&client_id=%s' % (SLACK_APP_ID))
+		return SlackAPIWrapper.__oauth_urls['OAUTH_AUTHENTICATION_URL']+('?scope=incoming-webhook,commands,bot,users:read,channels:write,channels:read&client_id=%s' % (SLACK_APP_ID))
 
 	@staticmethod
 	def get_channels_list(client):
@@ -62,14 +62,16 @@ class SlackAPIWrapper(object):
 			'token': client['slack_access_token']
 		})
 		response = json.loads(response.text)
-		return response['channels']
+		channels = response['channels']
+		channels = filter(lambda x: client['bot_id'] in x['members'], channels)
+
+		return {'channels':channels, 'selected': client['channel_id'] if 'channel_id' in client else None }
 
 	@staticmethod
 	def send_message(client,text):
 		requests.post(SlackAPIWrapper.__messaging_urls['POST_MESSAGE_URL'], params={
 			'text': text,
 			'as_user': True,
-			# HARDCODED
 			'channel': client['channel_id'],
 			'token': client['bot_token']
 		})
@@ -89,5 +91,5 @@ class SlackAPIWrapper(object):
 				else:
 					return jsonify(**{'fail':True})
 			else:
-				return redirect(SlackAPIWrapper.authentication_url)
+				return redirect(SlackAPIWrapper.authentication_url())
 		return _

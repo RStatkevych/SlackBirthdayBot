@@ -7,8 +7,8 @@ app.controller('controller', function ($scope, $http) {
 			method: 'GET',
 			url: '/api/calendar'
 		}).success(function(data) {
-			$scope.selected = data.data[0]
-			$scope.calendars = data.data
+			$scope.selectedCalendar = data.data.selected
+			$scope.calendars = data.data.calendars;
 		})
 	}
 	$scope.getChannels = function() {
@@ -16,8 +16,8 @@ app.controller('controller', function ($scope, $http) {
 			method: 'GET',
 			url: '/api/channel'
 		}).success(function(data) {
-			$scope.selected = data.data[0]
-			$scope.channels = data.data
+			$scope.selectedChannel = data.data.selected;
+			$scope.channels = data.data.channels;
 		})
 	}
 
@@ -25,13 +25,13 @@ app.controller('controller', function ($scope, $http) {
 		$http({
 			method:'POST',
 			url: '/api/update',
-			data: {calendar_id: $scope.selected.id, channel_id: $scope.selectedChannel.id}
+			data: {calendar_id: $scope.selectedCalendar, channel_id: $scope.selectedChannel}
 		}).success(function(data) {
 			console.log('Config successfully saved')
 		})
 	}
 	$scope.setSelected = function(calendar) {
-		$scope.selected = calendar
+		$scope.selectedCalendar = calendar
 	}
 	$scope.setSelectedChannel = function(channel) {
 		$scope.selectedChannel = channel
