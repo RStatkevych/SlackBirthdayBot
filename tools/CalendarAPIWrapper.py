@@ -1,9 +1,15 @@
-import requests
-import json
-import models
-import datetime
+import requests, json, models, datetime
 
 from slackbot_credits import *
+from functools import wraps
+from flask import jsonify, redirect
+from SlackAPIWrapper import SlackAPIWrapper as slack
+
+# global TODO
+# 1. Change API methods to static
+
+class  GoogleRefreshTokenRequired(Exception):
+	'''raised when refresh token is revoked'''
 
 class CalendarAPIWrapper(object):
 	client_id = GOOGLE_CALENDAR_APP_ID
@@ -19,6 +25,7 @@ class CalendarAPIWrapper(object):
 		'CALLENDAR_URL_GET_CALENDAR_LIST' : 'https://www.googleapis.com/calendar/v3/users/me/calendarList/',
 		'CALLENDAR_URL_GET_EVENTS': 'https://www.googleapis.com/calendar/v3/calendars/{0}/events/'
 	}
+
 
 	def __init__(self, user_data):
 		self.user_data = user_data
@@ -82,6 +89,7 @@ class CalendarAPIWrapper(object):
 		''' refreshes token in case it is expired
 		'''
 		print self.user_data
+
 		if not ('google_refresh_token' in self.user_data):
 			# no refresh token 
 			# mostly impossible situation
@@ -96,8 +104,12 @@ class CalendarAPIWrapper(object):
 
 		response = requests.post(self.__oauth_urls['OAUTH_URL_REFRESH_TOKEN'], params=params)
 		response = json.loads(response.text)
-		self.user_data['google_access_token'] = response['access_token']
-		self.user_data.save()
+		
+		if 'error' in response:
+			raise GoogleRefreshTokenRequired
+		else: 
+			self.user_data['google_access_token'] = response['access_token']
+			self.user_data.save()
 
 	@__validate_token_decorator
 	def get_calendar_list(self, **kwargs):
@@ -123,6 +135,28 @@ class CalendarAPIWrapper(object):
 				birthdays.append({'start': item['start']['date'], 'summary': item['summary']})
 				
 		return birthdays
+
+	@staticmethod
+	def authorized(f):
+		''' checks if user is authorized in google
+		'''
+		@wraps(f)
+		def _(*args, **kwargs):
+			try:
+				team = slack.get_team()
+				api = CalendarAPIWrapper(team)
+				if api.check_token_status():
+					return f(*args, **kwargs)
+				else: 
+					api.refresh_token()
+					return f(*args, **kwargs)
+			
+			except GoogleRefreshTokenRequired:
+				''' Handles cases when refresh token is no longer actual
+				'''
+				#return jsonify(**{'google_error': 'google token required'}), 403
+				return redirect(CalendarAPIWrapper.oauth_url())
+		return _
 
 if __name__ == '__main__':
 	TEST_CREDITS = models.UserCredits.objects[0]

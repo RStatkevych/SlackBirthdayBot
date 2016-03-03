@@ -15,7 +15,8 @@ class SlackAPIWrapper(object):
 	}
 	__messaging_urls = {
 		'POST_MESSAGE_URL' : 'https://slack.com/api/chat.postMessage',
-		'GET_CHANNELS_LIST' : 'https://slack.com/api/channels.list'
+		'GET_CHANNELS_LIST' : 'https://slack.com/api/channels.list',
+		'GET_GROUPS_LIST' : 'https://slack.com/api/groups.list'
 	}
 
 	@staticmethod
@@ -54,18 +55,26 @@ class SlackAPIWrapper(object):
 
 	@staticmethod
 	def authentication_url():
-		return SlackAPIWrapper.__oauth_urls['OAUTH_AUTHENTICATION_URL']+('?scope=incoming-webhook,commands,bot,users:read,channels:write,channels:read&client_id=%s' % (SLACK_APP_ID))
+		return SlackAPIWrapper.__oauth_urls['OAUTH_AUTHENTICATION_URL']+('?scope=incoming-webhook,commands,bot,users:read,channels:write,channels:read,groups:read&client_id=%s' % (SLACK_APP_ID))
 
 	@staticmethod
 	def get_channels_list(client):
-		response = requests.get(SlackAPIWrapper.__messaging_urls['GET_CHANNELS_LIST'], params={
+		response_channel = requests.get(SlackAPIWrapper.__messaging_urls['GET_CHANNELS_LIST'], params={
 			'token': client['slack_access_token']
 		})
-		response = json.loads(response.text)
-		channels = response['channels']
-		channels = filter(lambda x: client['bot_id'] in x['members'], channels)
+		response_groups = requests.get(SlackAPIWrapper.__messaging_urls['GET_GROUPS_LIST'], params={
+			'token': client['slack_access_token']
+		})
+		response_channel = json.loads(response_channel.text)
+		response_groups = json.loads(response_groups.text)
+		
+		channels = response_channel['channels']
+		groups = response_groups['groups']
 
-		return {'channels':channels, 'selected': client['channel_id'] if 'channel_id' in client else None }
+		channels = filter(lambda x: client['bot_id'] in x['members'], channels)
+		groups = filter(lambda x: client['bot_id'] in x['members'], groups)
+
+		return {'channels':channels+groups, 'selected': client['channel_id'] if 'channel_id' in client else None }
 
 	@staticmethod
 	def send_message(client,text):
@@ -85,11 +94,12 @@ class SlackAPIWrapper(object):
 			if 'slack_team' in session:
 				team_id = session['slack_team']
 				o = SlackAPIWrapper.get_team()
-				
+
 				if SlackAPIWrapper.check_user(o.slack_access_token):
 					return f()  
 				else:
 					return jsonify(**{'fail':True})
 			else:
+				# TODO: Separate application/json and html error handling
 				return redirect(SlackAPIWrapper.authentication_url())
 		return _

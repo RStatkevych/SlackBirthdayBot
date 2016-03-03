@@ -34,13 +34,14 @@ def slack_auth_redirect():
 						bot_token=response['bot']['bot_access_token'], bot_id=response['bot']['bot_user_id'],
 						slack_access_token=response['access_token'])
 		o.save()
+		return redirect(google_api.oauth_url())
 
 	else:
 		o = o[0]
 		o.update(bot_token=response['bot']['bot_access_token'], bot_id=response['bot']['bot_user_id'],
 				 slack_access_token=response['access_token'])
 	
-	return redirect(google_api.oauth_url())
+		return redirect('/config')
 
 @app.route('/auth/google')
 def google_auth_redirect():
@@ -61,8 +62,11 @@ def google_auth_redirect():
 	return redirect('/config')
 
 @app.route('/config')
+@google_api.authorized
 @slack.authorized
 def render_select_calendar_template():
+	team = slack.get_team()
+	api = google_api(team)
 	return render_template('config-template.html')
 
 @app.route('/api/update', methods=['POST'])
