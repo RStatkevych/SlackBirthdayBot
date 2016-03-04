@@ -13,7 +13,7 @@ from settings import *
 def detect_birthday():
 	with open('congrats.txt') as congrat:
 		congrats = [line for line in congrat]
-	credits = models.UserCredits.objects
+	credits = models.Team.objects
 	for credit in credits:
 
 		callendar = google_api(credit)

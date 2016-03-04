@@ -26,7 +26,6 @@ class CalendarAPIWrapper(object):
 		'CALLENDAR_URL_GET_EVENTS': 'https://www.googleapis.com/calendar/v3/calendars/{0}/events/'
 	}
 
-
 	def __init__(self, user_data):
 		self.user_data = user_data
 
@@ -93,7 +92,7 @@ class CalendarAPIWrapper(object):
 		if not ('google_refresh_token' in self.user_data):
 			# no refresh token 
 			# mostly impossible situation
-			raise Exception
+			raise GoogleRefreshTokenRequired
 
 		params = {
 			'grant_type':'refresh_token',
@@ -159,6 +158,6 @@ class CalendarAPIWrapper(object):
 		return _
 
 if __name__ == '__main__':
-	TEST_CREDITS = models.UserCredits.objects[0]
+	TEST_CREDITS = models.Team.objects[0]
 	callendar = CalendarAPIWrapper(TEST_CREDITS)
 	print callendar.get_events('of1q1gcca4deaom36veuq4pkr8@group.calendar.google.com')

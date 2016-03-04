@@ -26,21 +26,35 @@ def slack_auth_redirect():
 		# TODO: handle with 404 page
 		return jsonify(**{'lol':'fail'})
 
-	session['slack_team'] = response['team_id']
+	user_data = slack.get_user_data(response['access_token'])
+	
+	team = Team.objects(team_id=user_data['team_id'])
+	user = User.objects(slack_uid=user_data['id'])
 
-	o = UserCredits.objects(team_id=response['team_id'])
-	if len(o) == 0:
-		o = UserCredits(team_id=response['team_id'], team_name=response['team_name'],
-						bot_token=response['bot']['bot_access_token'], bot_id=response['bot']['bot_user_id'],
-						slack_access_token=response['access_token'])
-		o.save()
-		return redirect(google_api.oauth_url())
+	if len(user) == 0:
+		user = User(slack_uid=user_data['id'], slack_access_token=response['access_token'], name=user_data['name'])
+		user.save()
 
 	else:
-		o = o[0]
-		o.update(bot_token=response['bot']['bot_access_token'], bot_id=response['bot']['bot_user_id'],
-				 slack_access_token=response['access_token'])
-	
+		user = user[0]
+		user.update(slack_access_token=response['access_token'])
+
+	if len(team) == 0:
+		team = Team(team_id=response['team_id'], team_name=response['team_name'],
+				 	bot_token=response['bot']['bot_access_token'], bot_id=response['bot']['bot_user_id'])
+				#	slack_access_token=response['access_token'])
+		team.save()
+		user.update(team=team)
+
+		session['slack_team'] = response['team_id']
+		session['slack_user'] = user_data['id']
+		return redirect('/config')
+	else: 
+		if 'bot' in response:
+			team.update(bot_token=response['bot']['bot_access_token'], bot_id=response['bot']['bot_user_id'])
+
+		session['slack_team'] = response['team_id']
+		session['slack_user'] = user_data['id']
 		return redirect('/config')
 
 @app.route('/auth/google')
@@ -50,7 +64,7 @@ def google_auth_redirect():
 
 	response = google_api.auth_redirect_handler(code)
 
-	o = UserCredits.objects(team_id=team_id)
+	o = Team.objects(team_id=team_id)
 	
 	if len(o) != 0:
 		if 'refresh_token' in response:
@@ -62,11 +76,9 @@ def google_auth_redirect():
 	return redirect('/config')
 
 @app.route('/config')
-@google_api.authorized
 @slack.authorized
+@google_api.authorized
 def render_select_calendar_template():
-	team = slack.get_team()
-	api = google_api(team)
 	return render_template('config-template.html')
 
 @app.route('/api/update', methods=['POST'])
@@ -94,8 +106,8 @@ def get_calendars():
 @app.route('/api/channel')
 @slack.authorized
 def get_channels():
-	team = slack.get_team()
-	channels = slack.get_channels_list(team)
+	user = slack.get_user()
+	channels = slack.get_channels_list(user)
 	return jsonify(**{'data': channels})
 
 if __name__ == '__main__':
