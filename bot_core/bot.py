@@ -1,12 +1,7 @@
 # -*- coding utf-8 -*-
-import requests
-import datetime
-import csv
-import random
-import models
-import tools
-from tools import *
+import requests, datetime, csv, random, models, tools
 
+from tools import *
 from settings import *
 
 @app.task
@@ -18,12 +13,16 @@ def detect_birthday():
 
 		callendar = google_api(credit)
 
-		birthdays = callendar.get_events(credit['calendar_id'])
+		try:
+			birthdays = callendar.get_events(credit['calendar_id'])
 
-		for birthday in birthdays:
-			random_num = random.randint(0,len(congrats))
-			text = (birthday['summary'])
-			slack.send_message(credit, text)
+			for birthday in birthdays:
+				random_num = random.randint(0,len(congrats))
+				text = (birthday['summary'])
+				slack.send_message(credit, text)
+		except GoogleRefreshTokenRequired:
+			# TODO: Think about notification
+			continue
 
 
 if __name__ == '__main__':

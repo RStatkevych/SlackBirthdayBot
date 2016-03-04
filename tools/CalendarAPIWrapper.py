@@ -104,7 +104,7 @@ class CalendarAPIWrapper(object):
 
 		response = requests.post(self.__oauth_urls['OAUTH_URL_REFRESH_TOKEN'], params=params)
 		response = json.loads(response.text)
-		
+		#import ipdb; ipdb.set_trace()
 		if 'error' in response:
 			raise GoogleRefreshTokenRequired
 		else: 
