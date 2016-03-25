@@ -53,7 +53,7 @@ def google_auth_redirect():
 
 	o = Team.objects(team_id=team_id)
 	
-	if len(o) != 0 and not o['refresh_token']:
+	if len(o) != 0 :
 		if 'refresh_token' in response:
 			o.update(google_refresh_token=response['refresh_token'],
 					 google_access_token=response['access_token'])
