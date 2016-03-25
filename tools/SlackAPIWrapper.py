@@ -6,7 +6,7 @@ from functools import wraps
 
 import json, requests
 
-class SlackAuthFailed(object):
+class SlackAuthFailed(Exception):
 	"""Exception for cases when slack auth is failed"""
 		
 
@@ -37,14 +37,6 @@ class SlackAPIWrapper(object):
 		return json.loads(requests.get(SlackAPIWrapper.__oauth_urls['OAUTH_ACCESS_TOKEN'], params=params).text)
 
 	@staticmethod
-	def get_user():
-		''' returns user by its slack user id, saved in session 
-		'''
-		user_id = session['slack_user']
-		u = User.objects(slack_uid=user_id).first()
-		return u
-
-	@staticmethod
 	def get_team():
 		''' returns team of signed in user. Takes team id from session
 		'''
@@ -67,21 +59,22 @@ class SlackAPIWrapper(object):
 	@staticmethod
 	def get_channels_list(client):
 		response_channel = requests.get(SlackAPIWrapper.__messaging_urls['GET_CHANNELS_LIST'], params={
-			'token': client['slack_access_token']
+			'token': session['slack_user']
 		})
 		response_groups = requests.get(SlackAPIWrapper.__messaging_urls['GET_GROUPS_LIST'], params={
-			'token': client['slack_access_token']
+			'token': session['slack_user']
 		})
 		response_channel = json.loads(response_channel.text)
 		response_groups = json.loads(response_groups.text)
-		
+
 		channels = response_channel['channels']
 		groups = response_groups['groups']
+		team = Team.objects(team_id=client['team_id']).first() 
 
-		channels = filter(lambda x: client.team['bot_id'] in x['members'], channels)
-		groups = filter(lambda x: client.team['bot_id'] in x['members'], groups)
+		channels = filter(lambda x: team['bot_id'] in x['members'], channels)
+		groups = filter(lambda x: team['bot_id'] in x['members'], groups)
 
-		return {'channels':channels+groups, 'selected': client.team['channel_id'] if 'channel_id' in client else None }
+		return {'channels':channels+groups, 'selected': team['channel_id'] if 'channel_id' in client else None }
 
 	@staticmethod
 	def send_message(client,text):
@@ -95,6 +88,10 @@ class SlackAPIWrapper(object):
 	@staticmethod
 	def get_user_data(access_token):
 		user = json.loads(requests.get(SlackAPIWrapper.__oauth_urls['OAUTH_TEST_URL'], params={'token': access_token}).text)
+
+		if 'error' in user:
+			raise SlackAuthFailed
+
 		user_id = user['user_id']
 
 		user_info = requests.get(SlackAPIWrapper.__oauth_urls['OAUTH_USER_INFO'], params={'token':access_token,'user': user_id})
@@ -107,14 +104,16 @@ class SlackAPIWrapper(object):
 		'''
 		@wraps(f)
 		def _(*args, **kwargs):
-
-			if 'slack_user' in session:
-				user = SlackAPIWrapper.get_user()
-				if SlackAPIWrapper.check_user(user.slack_access_token):
-					return f()  
+			try:
+				if 'slack_user' in session:
+					if SlackAPIWrapper.check_user(session['slack_user']):
+						return f()  
+					else:
+						return jsonify(**{'fail':True})
 				else:
-					return jsonify(**{'fail':True})
-			else:
-				# TODO: Separate application/json and html error handling
+					# TODO: Separate application/json and html error handling
+					return redirect(SlackAPIWrapper.authentication_url())
+			except SlackAuthFailed, e: 
 				return redirect(SlackAPIWrapper.authentication_url())
+
 		return _

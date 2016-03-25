@@ -6,26 +6,22 @@ import random
 import models
 import tools
 from tools import *
-
 from settings import *
 
 @app.task
 def detect_birthday():
-	with open('congrats.txt') as congrat:
-		congrats = [line for line in congrat]
-	credits = models.Team.objects
-	for credit in credits:
+    credits = models.Team.objects
+    for credit in credits:
+        congrats = models.Congrats.objects(team=credit)
+        callendar = google_api(credit)
+        import ipdb; ipdb.set_trace()
+        birthdays = callendar.get_events(credit['calendar_id'])
 
-		callendar = google_api(credit)
-
-		birthdays = callendar.get_events(credit['calendar_id'])
-
-		for birthday in birthdays:
-			random_num = random.randint(0,len(congrats))
-			text = (birthday['summary'])
-			slack.send_message(credit, text)
+        for birthday in birthdays:
+            random_num = random.randint(0,len(congrats)-1)
+            text = (birthday['summary'])
+            slack.send_message(credit, congrats[random_num].text.format(text))
 
 
 if __name__ == '__main__':
-	detect_birthday()
-	#slack.send_message({'channel_id':'C0507DDEW', 'bot_token':'xoxb-17855172657-4S3JQwZ2otTWA30kNeaCt9gq', 'as_user':True}, '<!channel> Сегодня день рождения у <@ydudar> (Ярослава Дударя)! Поздравляем его от имени колектива и желаем ему счастья и здорвья, а также творческих и професиональных успехов!')
+    detect_birthday()

@@ -10,6 +10,8 @@ app = Flask(__name__)
 
 Bower(app)
 
+# TODO: join all data receiving into one view
+
 app.config['SECRET_KEY'] = 'random-string'
 
 @app.route('/')
@@ -29,33 +31,18 @@ def slack_auth_redirect():
 	user_data = slack.get_user_data(response['access_token'])
 	
 	team = Team.objects(team_id=user_data['team_id'])
-	user = User.objects(slack_uid=user_data['id'])
-
-	if len(user) == 0:
-		user = User(slack_uid=user_data['id'], slack_access_token=response['access_token'], name=user_data['name'])
-		user.save()
-
-	else:
-		user = user[0]
-		user.update(slack_access_token=response['access_token'])
 
 	if len(team) == 0:
 		team = Team(team_id=response['team_id'], team_name=response['team_name'],
 				 	bot_token=response['bot']['bot_access_token'], bot_id=response['bot']['bot_user_id'])
-				#	slack_access_token=response['access_token'])
 		team.save()
-		user.update(team=team)
-
-		session['slack_team'] = response['team_id']
-		session['slack_user'] = user_data['id']
-		return redirect('/config')
 	else: 
 		if 'bot' in response:
 			team.update(bot_token=response['bot']['bot_access_token'], bot_id=response['bot']['bot_user_id'])
 
-		session['slack_team'] = response['team_id']
-		session['slack_user'] = user_data['id']
-		return redirect('/config')
+	session['slack_team'] = response['team_id']
+	session['slack_user'] = response['access_token']
+	return redirect('/config')
 
 @app.route('/auth/google')
 def google_auth_redirect():
@@ -66,7 +53,7 @@ def google_auth_redirect():
 
 	o = Team.objects(team_id=team_id)
 	
-	if len(o) != 0:
+	if len(o) != 0 and not o['refresh_token']:
 		if 'refresh_token' in response:
 			o.update(google_refresh_token=response['refresh_token'],
 					 google_access_token=response['access_token'])
@@ -75,11 +62,34 @@ def google_auth_redirect():
 
 	return redirect('/config')
 
+@app.route('/api/profile')
+@slack.authorized
+def get_user_data():
+	return slack.get_user_data(session['slack_user'])
+
 @app.route('/config')
 @slack.authorized
 @google_api.authorized
 def render_select_calendar_template():
 	return render_template('config-template.html')
+
+@app.route('/api/congrats', methods=['GET', 'POST', 'DELETE'])
+@slack.authorized
+def get_congrats():
+	user = slack.get_user_data(session['slack_user'])
+	team = Team.objects(team_id=user['team_id'])[0]
+	
+	if request.method == 'GET':
+		congrats = Congrats.objects(team=team).as_pymongo()
+		return jsonify(**{'congrats':map(lambda x: {'text': x['text'], 'id': str(x['_id'])}, congrats)})
+	
+	if request.method == 'POST':
+		c = Congrats(team=team, text=request.json['text']).save()
+		return jsonify(**{'_id': str(c.id), 'text': c['text']})
+
+	if request.method == 'DELETE': 
+		Congrats(id=request.args['id']).delete()
+		return jsonify(**{'status': 'ok'})
 
 @app.route('/api/update', methods=['POST'])
 @slack.authorized
@@ -106,9 +116,10 @@ def get_calendars():
 @app.route('/api/channel')
 @slack.authorized
 def get_channels():
-	user = slack.get_user()
+	user = slack.get_user_data(session['slack_user'])
 	channels = slack.get_channels_list(user)
 	return jsonify(**{'data': channels})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    #app.run(debug=True)
+	app.run(debug=True)

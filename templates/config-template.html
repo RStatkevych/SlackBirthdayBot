@@ -33,7 +33,14 @@
 		 			<p>{{ channel.name }}</p>
 	 			</span>
 	 		</div>
- 		</div> 
+ 		</div>
+ 		<p>Enter congratulation:</p>
+ 		<textarea ng-model='congrat_text'></textarea>
+ 		<button class='save-congrat' ng-click='createCongratulation()'>Save</button>
+ 		<div>
+ 			<p ng-repeat='c in congrats'>{{ c.text }}<button ng-click='dropCongratulation(c.id)'>Delete</button></p>
+
+ 		</div>
  		<button class='save-button' ng-click='update()'>Save</button>
  		{% endraw %}
  	</div>

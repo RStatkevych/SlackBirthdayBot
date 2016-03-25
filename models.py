@@ -12,8 +12,6 @@ class Team(Document):
 	google_access_token 	= StringField()
 	google_refresh_token 	= StringField()
 
-class User(Document):
-	slack_access_token 		= StringField()
-	name 					= StringField()
-	slack_uid 				= StringField()
+class Congrats(Document):
+	text 					= StringField()
 	team 					= ReferenceField(Team)
