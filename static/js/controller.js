@@ -11,6 +11,37 @@ app.controller('controller', function ($scope, $http) {
 			$scope.calendars = data.data.calendars;
 		})
 	}
+	
+	$scope.getCongratulations = function() {
+		$http({
+			method: 'GET',
+			url: '/api/congrats'
+		}).success(function(data, status) {
+			$scope.congrats = data.congrats;
+		})
+	}
+
+	$scope.createCongratulation = function() {
+		$http({
+			method: 'POST',
+			data: { text: $scope.congrat_text },
+			url: '/api/congrats'
+		}).success(function(data, status) {
+			$scope.congrats.push(data)
+		})
+	}
+
+	$scope.dropCongratulation = function(id) {
+		$http({
+			method: 'DELETE', 
+			url: '/api/congrats',
+			params: {id: id}
+		}).success(function(data){
+			console.log(data);
+			var ids = $scope.congrats.map(function(d){return d._id})
+			$scope.congrats.splice(ids.indexOf(id), 1)
+		})
+	}
 	$scope.getChannels = function() {
 		$http({
 			method: 'GET',
@@ -20,7 +51,6 @@ app.controller('controller', function ($scope, $http) {
 			$scope.channels = data.data.channels;
 		})
 	}
-
 	$scope.update = function() {
 		$http({
 			method:'POST',
@@ -37,7 +67,7 @@ app.controller('controller', function ($scope, $http) {
 		$scope.selectedChannel = channel
 	}
 
-	$scope.getCalendars()
-	$scope.getChannels()
-
+	$scope.getCongratulations();
+	$scope.getCalendars();
+	$scope.getChannels();
 })
